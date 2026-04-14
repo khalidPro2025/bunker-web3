@@ -1,0 +1,80 @@
+version: "3.8"
+
+services:
+  bunkerweb-aio:
+    image: bunkerity/bunkerweb-all-in-one:1.6.9
+    container_name: bunkerweb-aio
+
+    ports:
+      - "80:8080/tcp"
+      - "443:8443/tcp"
+      - "7000:7000/tcp"
+
+    environment:
+      API_WHITELIST_IP: "127.0.0.1 10.20.30.0/24 172.16.0.0/12"
+
+      SERVICE_UI: "yes"
+      SERVICE_SCHEDULER: "yes"
+      USE_REDIS: "yes"
+      MULTISITE: "yes"
+
+      SERVER_NAME: "www.secure-web.sn"
+
+      USE_REVERSE_PROXY: "yes"
+      REVERSE_PROXY_URL: "/"
+      REVERSE_PROXY_HOST: "http://app1:80"
+
+      USE_REAL_IP: "yes"
+      REAL_IP_FROM: "172.16.0.0/12 10.0.0.0/8"
+      REAL_IP_HEADER: "X-Forwarded-For"
+
+      # sécurité automatique
+      AUTO_LETS_ENCRYPT: "yes"
+      EMAIL_LETS_ENCRYPT: "admin@secure-web.sn"
+
+      # intelligence communautaire
+      USE_BUNKERNET: "yes"
+
+      #CrowdSec activé
+      USE_CROWDSEC: "yes"
+
+    restart: unless-stopped
+
+    networks:
+      - bw-services
+      - crowdsec-net
+
+  app1:
+    image: traefik/whoami:v1.10
+    container_name: app1
+    restart: unless-stopped
+    networks:
+      - bw-services
+
+  #CrowdSec engine
+  crowdsec:
+    image: crowdsecurity/crowdsec:latest
+    container_name: crowdsec
+
+    environment:
+      COLLECTIONS: "crowdsecurity/nginx crowdsecurity/linux"
+
+    volumes:
+      - crowdsec_db:/var/lib/crowdsec/data
+      - crowdsec_config:/etc/crowdsec
+
+    restart: unless-stopped
+
+    networks:
+      - crowdsec-net
+
+volumes:
+  crowdsec_db:
+  crowdsec_config:
+
+networks:
+  bw-services:
+    driver: bridge
+
+  crowdsec-net:
+    driver: bridge
