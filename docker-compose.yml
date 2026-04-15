@@ -10,6 +10,10 @@ services:
       - "443:8443/tcp"
       - "7000:7000/tcp"
 
+    volumes:
+      - ./cert.pem:/etc/bunkerweb/certs/cert.pem:ro
+      - ./key.pem:/etc/bunkerweb/certs/key.pem:ro
+
     environment:
       API_WHITELIST_IP: "127.0.0.1 10.20.30.0/24 172.16.0.0/12"
 
@@ -24,18 +28,18 @@ services:
       REVERSE_PROXY_URL: "/"
       REVERSE_PROXY_HOST: "http://app1:80"
 
+      # TLS CUSTOM
+      USE_CUSTOM_SSL: "yes"
+      CUSTOM_SSL_CERT: "/etc/bunkerweb/certs/cert.pem"
+      CUSTOM_SSL_KEY: "/etc/bunkerweb/certs/key.pem"
+
       USE_REAL_IP: "yes"
       REAL_IP_FROM: "172.16.0.0/12 10.0.0.0/8"
       REAL_IP_HEADER: "X-Forwarded-For"
 
-      # sécurité automatique
-      AUTO_LETS_ENCRYPT: "yes"
-      EMAIL_LETS_ENCRYPT: "admin@secure-web.sn"
+      AUTO_LETS_ENCRYPT: "no"
 
-      # intelligence communautaire
       USE_BUNKERNET: "yes"
-
-      #CrowdSec activé
       USE_CROWDSEC: "yes"
 
     restart: unless-stopped
@@ -51,7 +55,6 @@ services:
     networks:
       - bw-services
 
-  #CrowdSec engine
   crowdsec:
     image: crowdsecurity/crowdsec:latest
     container_name: crowdsec
